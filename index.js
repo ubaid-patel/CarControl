@@ -1,4 +1,31 @@
-var ESPIP = 'https://8ld3k0kk-5000.inc1.devtunnels.ms/'
+var ESPIP = '';
+(localStorage.getItem('ESP_IP')==true?ESPIP:ESPIP='')
+console.log(ESPIP)
+// Configuring ESP IP address
+const settingsTab = document.getElementById('settings-tab');
+const settingsPanel = document.getElementById('settings-panel');
+const saveBtn = document.getElementById('save-ip');
+const ipInput = document.getElementById('esp-ip');
+
+settingsTab.addEventListener('click', () => {
+  settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+});
+
+saveBtn.addEventListener('click', () => {
+  const ip = ipInput.value.trim();
+  if (ip) {
+    localStorage.setItem('ESP_IP', ip);
+    ESPIP = ip;
+    console.log(ESPIP)
+    document.getElementById('status').textContent = "ESP IP Saved: " + ip;
+    settingsPanel.style.display = 'none';
+  }
+});
+
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('ESP_IP');
+  if (saved) ipInput.value = saved;
+});
 
 
 function sendCommand(direction, label) {
