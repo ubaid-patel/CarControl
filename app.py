@@ -1,47 +1,55 @@
 from flask import Flask, send_from_directory, jsonify
 import logging
+from flask_cors import CORS
+import requests  # For proxying requests to ESP32
 
 app = Flask(__name__, static_url_path='', static_folder='.')
-
-# Enable logging for debug output in terminal
+CORS(app)
 logging.basicConfig(level=logging.INFO)
 
-# Route for the main HTML page
+ESP32_BASE_URL = "http://192.168.113.159"  # Change to your ESP32 IP
+
+# Serve the main page
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
 
-# Serve CSS, JS, etc.
+# Serve static files like CSS, JS
 @app.route('/<path:filename>')
 def serve_static(filename):
     return send_from_directory('.', filename)
 
-# === Movement Command Routes ===
-@app.route('/forward')
-def forward():
-    app.logger.info("Command: FORWARD")
-    return jsonify({'status': 'Moving Forward'})
+# Original movement commands handled directly in Flask
+@app.route('/test/<action>')
+def control_action(action):
+    print('Running test')
+    valid_actions = {
+        'forward': 'Moving Forward',
+        'backward': 'Moving Backward',
+        'left': 'Turning Left',
+        'right': 'Turning Right',
+        'stop': 'Stopping'
+    }
+    
+    if action in valid_actions:
+        app.logger.info(f"Command: {action.upper()}")
+        return jsonify({'status': valid_actions[action]})
+    else:
+        abort(404, description="Invalid command")
 
-@app.route('/backward')
-def backward():
-    app.logger.info("Command: BACKWARD")
-    return jsonify({'status': 'Moving Backward'})
+# --- New: Proxy route to forward commands to the ESP32 ---
+@app.route('/esp/<action>')
+def esp_proxy(action):
+    print('Accessing ESP')
+    try:
+        esp_url = f"{ESP32_BASE_URL}/{action}"
+        esp_response = requests.get(esp_url, timeout=3)
+        app.logger.info(f"Proxy to ESP: {esp_url} => {esp_response.text}")
+        return jsonify({'esp_response': esp_response.text})
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"ESP request failed: {e}")
+        return jsonify({'error': 'Failed to reach ESP32'}), 500
 
-@app.route('/left')
-def left():
-    app.logger.info("Command: LEFT")
-    return jsonify({'status': 'Turning Left'})
-
-@app.route('/right')
-def right():
-    app.logger.info("Command: RIGHT")
-    return jsonify({'status': 'Turning Right'})
-
-@app.route('/stop')
-def stop():
-    app.logger.info("Command: STOP")
-    return jsonify({'status': 'Stopping'})
-
-# Start the server
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Run Flask with HTTPS enabled (make sure cert.pem and key.pem exist)
+    app.run(host='0.0.0.0', port=5000, debug=True, ssl_context=('cert.pem', 'key.pem'))

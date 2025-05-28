@@ -1,5 +1,5 @@
-var ESPIP = '';
-(localStorage.getItem('ESP_IP')==true?ESPIP:ESPIP='')
+var ESPIP = '/esp';
+
 console.log(ESPIP)
 // Configuring ESP IP address
 const settingsTab = document.getElementById('settings-tab');
@@ -14,7 +14,7 @@ settingsTab.addEventListener('click', () => {
 saveBtn.addEventListener('click', () => {
   const ip = ipInput.value.trim();
   if (ip) {
-    localStorage.setItem('ESP_IP', ip);
+    // localStorage.setItem('ESP_IP', ip);
     ESPIP = ip;
     console.log(ESPIP)
     document.getElementById('status').textContent = "ESP IP Saved: " + ip;
@@ -32,6 +32,7 @@ function sendCommand(direction, label) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', `${ESPIP}/` + direction, true);
     xhr.onload = function () {
+        
         const status = document.getElementById('status');
         if (xhr.status === 200) {
             status.textContent = 'Action: ' + label;
